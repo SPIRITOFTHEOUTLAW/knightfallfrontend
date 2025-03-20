@@ -13,8 +13,8 @@ const App: React.FC = () => {
   const [mintName, setMintName] = useState<string>("");
   const [mintTokenURI, setMintTokenURI] = useState<string>("");
   const [status, setStatus] = useState<string>("");
-  const contractAddress = "0x8488fF6669fC5d1FCcff0a9f595891231Ba23878"; // Updated address
-  const alchemyUrl = "https://eth-sepolia.g.alchemy.com/v2/MAXEpsAIpc8nSG9kI68OnibJLYiEmd4i";
+  const contractAddress = "0x58cA8593f88F8675482a12f891158E9664Ca0E70"; // New contract address
+  const alchemyUrl = "https://eth-sepolia.g.alchemy.com/v2/K5u9VECWZWJoA5qAXwMwxYeC0Ge-VUwq"; // New Alchemy API key
 
   const readContractRef = useRef<ethers.Contract | null>(null);
   const writeContractRef = useRef<ethers.Contract | null>(null);
