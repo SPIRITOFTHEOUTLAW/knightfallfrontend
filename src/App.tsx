@@ -112,7 +112,7 @@ const App: React.FC = () => {
                 <p>Member Name: {memberName}</p>
               )}
               {isMember && (
-                <Link to="/knightfall">
+                <Link to="/vault">
                   <button
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundImage = 'linear-gradient(to right, #8B4513, #FFD700, url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'50\' height=\'50\'><path d=\'M10 10 L40 40 M40 10 L10 40\' stroke=\'red\' stroke-width=\'2\'/></svg>")')}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundImage = 'linear-gradient(to right, #8B4513, #FFD700)')}
@@ -170,7 +170,7 @@ const App: React.FC = () => {
           )}
         </div>
         <Routes>
-          <Route path="/knightfall" element={isMember ? <CodexVault /> : <Navigate to="/" />} />
+          <Route path="/vault" element={isMember ? <CodexVault /> : <Navigate to="/" />} />
           <Route path="/" element={<div />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
