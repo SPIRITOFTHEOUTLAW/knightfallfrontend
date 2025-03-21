@@ -108,7 +108,7 @@ const CodexVault: React.FC = () => {
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial' }}>
-      <h1>Knightfall Vault</h1>
+      <h1>The Chivalric Order of Knightfall Vault</h1>
       {!account ? (
         <button onClick={connectWallet}>Connect Wallet</button>
       ) : (

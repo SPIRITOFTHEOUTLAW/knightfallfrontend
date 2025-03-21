@@ -13,7 +13,7 @@ const App: React.FC = () => {
   const [mintName, setMintName] = useState<string>("");
   const [mintTokenURI, setMintTokenURI] = useState<string>("");
   const [status, setStatus] = useState<string>("");
-  const contractAddress = "0x52006dF8EFaB5CEd420d5983c4798a15c8fDFE31"; // Updated contract address
+  const contractAddress = "0x52006dF8EFaB5CEd420d5983c4798a15c8fDFE31";
   const alchemyUrl = "https://eth-sepolia.g.alchemy.com/v2/K5u9VECWZWJoA5qAXwMwxYeC0Ge-VUwq";
 
   const readContractRef = useRef<ethers.Contract | null>(null);
@@ -102,7 +102,7 @@ const App: React.FC = () => {
     <div>
       <Router>
         <div style={{ padding: '20px' }}>
-          <h1>Knightfall</h1>
+          <h1>The Chivalric Order of Knightfall</h1>
           {account ? (
             <>
               <p>Connected Account: {account}</p>
