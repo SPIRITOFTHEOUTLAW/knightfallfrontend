@@ -6,7 +6,6 @@ import KnightfallCodexABI from './abi/KnightfallCodex.json';
 const CONTRACT_ADDRESS = "0x52006dF8EFaB5CEd420d5983c4798a15c8fDFE31";
 
 const CodexVault: React.FC = () => {
-  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
   const [contract, setContract] = useState<ethers.Contract | null>(null);
   const [account, setAccount] = useState<string | null>(null);
@@ -21,12 +20,9 @@ const CodexVault: React.FC = () => {
   const connectWallet = async () => {
     if (window.ethereum) {
       try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        await provider.send('eth_requestAccounts', []);
-        const signer = await provider.getSigner();
+        const signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
         const address = await signer.getAddress();
 
-        setProvider(provider);
         setSigner(signer);
         setAccount(address);
 
@@ -54,7 +50,6 @@ const CodexVault: React.FC = () => {
       setIsWhitelisted(whitelisted);
 
       // Fetch user's NFTs
-      const balance = await contract.balanceOf(account);
       const nfts = [];
       for (let i = 1; i <= total; i++) {
         try {
