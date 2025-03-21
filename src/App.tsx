@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
 import { BrowserRouter as Router, Route, Routes, Navigate, Link } from 'react-router-dom';
-import knightfallCodexABI from './abi/KnightfallCodex.json';
+import KnightfallCodexABI from './abi/KnightfallCodex.json';
 import CodexVault from './CodexVault';
 
 const App: React.FC = () => {
@@ -13,8 +13,8 @@ const App: React.FC = () => {
   const [mintName, setMintName] = useState<string>("");
   const [mintTokenURI, setMintTokenURI] = useState<string>("");
   const [status, setStatus] = useState<string>("");
-  const contractAddress = "0x58cA8593f88F8675482a12f891158E9664Ca0E70"; // New contract address
-  const alchemyUrl = "https://eth-sepolia.g.alchemy.com/v2/K5u9VECWZWJoA5qAXwMwxYeC0Ge-VUwq"; // New Alchemy API key
+  const contractAddress = "0x52006dF8EFaB5CEd420d5983c4798a15c8fDFE31"; // Updated contract address
+  const alchemyUrl = "https://eth-sepolia.g.alchemy.com/v2/K5u9VECWZWJoA5qAXwMwxYeC0Ge-VUwq";
 
   const readContractRef = useRef<ethers.Contract | null>(null);
   const writeContractRef = useRef<ethers.Contract | null>(null);
@@ -33,8 +33,8 @@ const App: React.FC = () => {
           if (isMounted.current) setAccount(address);
 
           const readProvider = new ethers.JsonRpcProvider(alchemyUrl);
-          readContractRef.current = new ethers.Contract(contractAddress, knightfallCodexABI.abi, readProvider);
-          writeContractRef.current = new ethers.Contract(contractAddress, knightfallCodexABI.abi, signer);
+          readContractRef.current = new ethers.Contract(contractAddress, KnightfallCodexABI, readProvider);
+          writeContractRef.current = new ethers.Contract(contractAddress, KnightfallCodexABI, signer);
 
           if (readContractRef.current) {
             const supply = await readContractRef.current.totalSupply();
@@ -102,7 +102,7 @@ const App: React.FC = () => {
     <div>
       <Router>
         <div style={{ padding: '20px' }}>
-          <h1>Knightfall Codex</h1>
+          <h1>Knightfall</h1>
           {account ? (
             <>
               <p>Connected Account: {account}</p>
@@ -112,7 +112,7 @@ const App: React.FC = () => {
                 <p>Member Name: {memberName}</p>
               )}
               {isMember && (
-                <Link to="/codex">
+                <Link to="/knightfall">
                   <button
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundImage = 'linear-gradient(to right, #8B4513, #FFD700, url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'50\' height=\'50\'><path d=\'M10 10 L40 40 M40 10 L10 40\' stroke=\'red\' stroke-width=\'2\'/></svg>")')}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundImage = 'linear-gradient(to right, #8B4513, #FFD700)')}
@@ -170,9 +170,9 @@ const App: React.FC = () => {
           )}
         </div>
         <Routes>
-          <Route path="/codex" element={isMember ? <CodexVault /> : <Navigate to="/" />} />
-          <Route path="/" element={<div />} /> {/* Default route */}
-          <Route path="*" element={<Navigate to="/" />} /> {/* Fallback route for 404 */}
+          <Route path="/knightfall" element={isMember ? <CodexVault /> : <Navigate to="/" />} />
+          <Route path="/" element={<div />} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
     </div>
