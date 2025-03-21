@@ -38,7 +38,8 @@ const App: React.FC = () => {
           } else {
             // Request account access
             await provider.send("eth_requestAccounts", []);
-            address = await provider.getSigner().getAddress();
+            const signer = await provider.getSigner();
+            address = await signer.getAddress();
           }
 
           if (isMounted.current) setAccount(address);
