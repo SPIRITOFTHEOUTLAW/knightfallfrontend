@@ -6,12 +6,11 @@ import KnightfallCodexABI from './abi/KnightfallCodex.json';
 const CONTRACT_ADDRESS = "0xFcf083f1E6a975B2365315af4Bed2d32FEC262Df";
 
 const CodexVault: React.FC = () => {
-  const [signer, setSigner] = useState<ethers.Signer | null>(null);
   const [contract, setContract] = useState<ethers.Contract | null>(null);
   const [account, setAccount] = useState<string | null>(null);
   const [totalSupply, setTotalSupply] = useState<number>(0);
   const [userNFTs, setUserNFTs] = useState<any[]>([]);
-  const [userCategory, setUserCategory] = useState<string>(''); // New state for the user's category
+  const [userCategory, setUserCategory] = useState<string>(''); // State for the user's category
   const [error, setError] = useState<string | null>(null);
 
   // Connect to MetaMask
@@ -21,7 +20,6 @@ const CodexVault: React.FC = () => {
         const signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
         const address = await signer.getAddress();
 
-        setSigner(signer);
         setAccount(address);
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, KnightfallCodexABI, signer);
