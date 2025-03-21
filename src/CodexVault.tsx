@@ -11,9 +11,7 @@ const CodexVault: React.FC = () => {
   const [account, setAccount] = useState<string | null>(null);
   const [totalSupply, setTotalSupply] = useState<number>(0);
   const [userNFTs, setUserNFTs] = useState<any[]>([]);
-  const [isWhitelisted, setIsWhitelisted] = useState<boolean>(false);
-  const [chosenName, setChosenName] = useState<string>('');
-  const [tokenURI, setTokenURI] = useState<string>('');
+  const [userCategory, setUserCategory] = useState<string>(''); // New state for the user's category
   const [error, setError] = useState<string | null>(null);
 
   // Connect to MetaMask
@@ -45,20 +43,17 @@ const CodexVault: React.FC = () => {
       const total = await contract.totalSupply();
       setTotalSupply(Number(total));
 
-      // Check if user is whitelisted
-      const whitelisted = await contract.isWhitelisted(account);
-      setIsWhitelisted(whitelisted);
-
       // Fetch user's NFTs
       const nfts = [];
-      // First, check if the user is a member
+      // Check if the user is a member
       const isMember = await contract.isMember(account);
       if (isMember) {
         const name = await contract.memberName(account);
         const category = await contract.memberCategory(account);
-        // Since _addressToTokenId is not public, loop through token IDs to find the one owned by the user
-        // Optimize by limiting the range to token IDs 1-24 (Knights and Commanders)
-        for (let i = 1; i <= 24; i++) {
+        // Set the user's category for the welcome message
+        setUserCategory(getCategoryName(Number(category)));
+        // Loop through all token IDs to find the one owned by the user
+        for (let i = 1; i <= total; i++) {
           try {
             const owner = await contract.ownerOf(i);
             if (owner.toLowerCase() === account.toLowerCase()) {
@@ -78,24 +73,9 @@ const CodexVault: React.FC = () => {
     }
   };
 
-  // Mint a new NFT
-  const mintNFT = async () => {
-    if (!contract || !signer) return;
-
-    try {
-      setError(null);
-      const tx = await contract.mintMembership(chosenName, tokenURI);
-      await tx.wait();
-      alert('Knightfall Sigil (KS) NFT minted successfully!');
-      fetchContractData(); // Refresh NFT data
-    } catch (err) {
-      setError('Error minting NFT: ' + (err as Error).message);
-    }
-  };
-
   // Convert category number to name
   const getCategoryName = (category: number) => {
-    const categories = ['None', 'Knight', 'Commander', 'VanguardCaptain', 'VanguardOracle', 'VanguardSentinel', 'VanguardWarrior'];
+    const categories = ['None', 'Knight', 'Commander', 'Captain', 'Oracle', 'Sentinel', 'Warrior'];
     return categories[category] || 'Unknown';
   };
 
@@ -120,7 +100,7 @@ const CodexVault: React.FC = () => {
         <button onClick={connectWallet}>Connect Wallet</button>
       ) : (
         <>
-          <p>Welcome, noble knight! Address: {account}</p>
+          <p>Welcome, noble {userCategory || 'member'}! Address: {account}</p>
           <p>Total Pre-approved Names: {totalSupply}</p>
 
           <h2>Your Knightfall Sigil (KS) NFTs</h2>
@@ -134,29 +114,6 @@ const CodexVault: React.FC = () => {
             </ul>
           ) : (
             <p>You don’t own any Knightfall Sigil (KS) NFTs yet.</p>
-          )}
-
-          <h2>Mint a New Knightfall Sigil (KS) NFT</h2>
-          {isWhitelisted ? (
-            <>
-              <input
-                type="text"
-                placeholder="Chosen Name (e.g., Galahad)"
-                value={chosenName}
-                onChange={(e) => setChosenName(e.target.value)}
-                style={{ marginRight: '10px' }}
-              />
-              <input
-                type="text"
-                placeholder="Token URI (e.g., ipfs://...)"
-                value={tokenURI}
-                onChange={(e) => setTokenURI(e.target.value)}
-                style={{ marginRight: '10px' }}
-              />
-              <button onClick={mintNFT}>Mint NFT</button>
-            </>
-          ) : (
-            <p>You are not whitelisted to mint a Knightfall Sigil (KS) NFT.</p>
           )}
 
           {error && <p style={{ color: 'red' }}>{error}</p>}
