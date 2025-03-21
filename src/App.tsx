@@ -13,6 +13,7 @@ const App: React.FC = () => {
   const [mintName, setMintName] = useState<string>("");
   const [mintTokenURI, setMintTokenURI] = useState<string>("");
   const [status, setStatus] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(true); // New state for loading
   const contractAddress = "0xFcf083f1E6a975B2365315af4Bed2d32FEC262Df";
   const alchemyUrl = "https://eth-sepolia.g.alchemy.com/v2/K5u9VECWZWJoA5qAXwMwxYeC0Ge-VUwq";
 
@@ -26,32 +27,57 @@ const App: React.FC = () => {
     async function connectWallet() {
       if (window.ethereum) {
         try {
+          // Check if the user is already connected
           const provider = new ethers.BrowserProvider(window.ethereum);
-          await provider.send("eth_requestAccounts", []);
-          const signer = await provider.getSigner();
-          const address = await signer.getAddress();
+          const accounts = await provider.send("eth_accounts", []);
+          let address: string | null = null;
+
+          if (accounts.length > 0) {
+            // User is already connected, use the first account
+            address = accounts[0];
+          } else {
+            // Request account access
+            await provider.send("eth_requestAccounts", []);
+            address = await provider.getSigner().getAddress();
+          }
+
           if (isMounted.current) setAccount(address);
 
           const readProvider = new ethers.JsonRpcProvider(alchemyUrl);
           readContractRef.current = new ethers.Contract(contractAddress, KnightfallCodexABI, readProvider);
-          writeContractRef.current = new ethers.Contract(contractAddress, KnightfallCodexABI, signer);
+          writeContractRef.current = new ethers.Contract(contractAddress, KnightfallCodexABI, await provider.getSigner());
 
-          if (readContractRef.current) {
+          if (readContractRef.current && address) {
             const supply = await readContractRef.current.totalSupply();
             if (isMounted.current) setTotalSupply(Number(supply));
             const memberStatus = await readContractRef.current.isMember(address);
-            if (isMounted.current) setIsMember(memberStatus);
-            if (memberStatus) {
-              const name = await readContractRef.current.memberName(address);
-              if (isMounted.current) setMemberName(name);
+            if (isMounted.current) {
+              setIsMember(memberStatus);
+              // Persist isMember in localStorage
+              localStorage.setItem('isMember', JSON.stringify(memberStatus));
+              if (memberStatus) {
+                const name = await readContractRef.current.memberName(address);
+                setMemberName(name);
+              }
             }
           }
         } catch (error: any) {
           if (isMounted.current) setStatus("Error: " + (error.message || "Unknown error"));
+        } finally {
+          if (isMounted.current) setIsLoading(false);
         }
       } else {
-        if (isMounted.current) setStatus("Please install MetaMask!");
+        if (isMounted.current) {
+          setStatus("Please install MetaMask!");
+          setIsLoading(false);
+        }
       }
+    }
+
+    // Check if isMember is stored in localStorage
+    const storedIsMember = localStorage.getItem('isMember');
+    if (storedIsMember !== null) {
+      setIsMember(JSON.parse(storedIsMember));
     }
 
     connectWallet();
@@ -87,10 +113,14 @@ const App: React.FC = () => {
         const supply = await readContractRef.current.totalSupply();
         if (isMounted.current) setTotalSupply(Number(supply));
         const memberStatus = await readContractRef.current.isMember(account);
-        if (isMounted.current) setIsMember(memberStatus);
-        if (memberStatus) {
-          const name = await readContractRef.current.memberName(account);
-          if (isMounted.current) setMemberName(name);
+        if (isMounted.current) {
+          setIsMember(memberStatus);
+          // Update isMember in localStorage
+          localStorage.setItem('isMember', JSON.stringify(memberStatus));
+          if (memberStatus) {
+            const name = await readContractRef.current.memberName(account);
+            setMemberName(name);
+          }
         }
       }
     } catch (error: any) {
@@ -103,7 +133,9 @@ const App: React.FC = () => {
       <Router>
         <div style={{ padding: '20px' }}>
           <h1>The Chivalric Order of Knightfall</h1>
-          {account ? (
+          {isLoading ? (
+            <p>Checking membership...</p>
+          ) : account ? (
             <>
               <p>Connected Account: {account}</p>
               <p>Total Supply: {totalSupply !== null ? totalSupply : 'Loading...'}</p>
@@ -170,7 +202,7 @@ const App: React.FC = () => {
           )}
         </div>
         <Routes>
-          <Route path="/vault" element={isMember ? <CodexVault /> : <Navigate to="/" />} />
+          <Route path="/vault" element={isLoading ? <div>Checking membership...</div> : (isMember ? <CodexVault /> : <Navigate to="/" />)} />
           <Route path="/" element={<div />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
