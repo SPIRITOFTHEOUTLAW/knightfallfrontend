@@ -13,7 +13,7 @@ const App: React.FC = () => {
   const [mintName, setMintName] = useState<string>("");
   const [mintTokenURI, setMintTokenURI] = useState<string>("");
   const [status, setStatus] = useState<string>("");
-  const contractAddress = "0x52006dF8EFaB5CEd420d5983c4798a15c8fDFE31";
+  const contractAddress = "0xFcf083f1E6a975B2365315af4Bed2d32FEC262Df";
   const alchemyUrl = "https://eth-sepolia.g.alchemy.com/v2/K5u9VECWZWJoA5qAXwMwxYeC0Ge-VUwq";
 
   const readContractRef = useRef<ethers.Contract | null>(null);

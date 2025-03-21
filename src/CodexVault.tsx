@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import KnightfallCodexABI from './abi/KnightfallCodex.json';
 
 // Hardcode the contract address
-const CONTRACT_ADDRESS = "0x52006dF8EFaB5CEd420d5983c4798a15c8fDFE31";
+const CONTRACT_ADDRESS = "0xFcf083f1E6a975B2365315af4Bed2d32FEC262Df";
 
 const CodexVault: React.FC = () => {
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
@@ -51,18 +51,25 @@ const CodexVault: React.FC = () => {
 
       // Fetch user's NFTs
       const nfts = [];
-      for (let i = 1; i <= total; i++) {
-        try {
-          const owner = await contract.ownerOf(i);
-          if (owner.toLowerCase() === account.toLowerCase()) {
-            const name = await contract.memberName(account);
-            const category = await contract.memberCategory(account);
-            const uri = await contract.tokenURI(i);
-            nfts.push({ tokenId: i, name, category: Number(category), uri });
+      // First, check if the user is a member
+      const isMember = await contract.isMember(account);
+      if (isMember) {
+        const name = await contract.memberName(account);
+        const category = await contract.memberCategory(account);
+        // Since _addressToTokenId is not public, loop through token IDs to find the one owned by the user
+        // Optimize by limiting the range to token IDs 1-24 (Knights and Commanders)
+        for (let i = 1; i <= 24; i++) {
+          try {
+            const owner = await contract.ownerOf(i);
+            if (owner.toLowerCase() === account.toLowerCase()) {
+              const uri = await contract.tokenURI(i);
+              nfts.push({ tokenId: i, name, category: Number(category), uri });
+              break; // Stop once we find the user's NFT
+            }
+          } catch (err) {
+            // Token doesn't exist or isn't owned by the user
+            continue;
           }
-        } catch (err) {
-          // Token doesn't exist or isn't owned by the user
-          continue;
         }
       }
       setUserNFTs(nfts);
@@ -88,7 +95,7 @@ const CodexVault: React.FC = () => {
 
   // Convert category number to name
   const getCategoryName = (category: number) => {
-    const categories = ['None', 'Knight', 'VanguardCaptain', 'VanguardOracle', 'VanguardSentinel', 'VanguardWarrior'];
+    const categories = ['None', 'Knight', 'Commander', 'VanguardCaptain', 'VanguardOracle', 'VanguardSentinel', 'VanguardWarrior'];
     return categories[category] || 'Unknown';
   };
 
