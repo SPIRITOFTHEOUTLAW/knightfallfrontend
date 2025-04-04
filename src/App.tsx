@@ -1,25 +1,50 @@
+// frontend/src/App.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
-import { BrowserRouter as Router, Route, Routes, Navigate, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import KnightfallCodexABI from './abi/KnightfallCodex.json';
-import CodexVault from './CodexVault';
+import KnightfallBastion from './KnightfallBastion';
+import TheCommandry from './TheCommandry';
+import TheInnerKeep from './TheInnerKeep';
+import YourVault from './YourVault';
+import LibraryOfAlexandria from './LibraryOfAlexandria';
+import KnightfallCodex from './KnightfallCodex';
+import TheGreatHall from './TheGreatHall';
+import TheMapRoom from './TheMapRoom';
+import TheForgery from './TheForgery';
+import TheAlchemistsWing from './TheAlchemistsWing';
+import { WalletContext } from './WalletContext';
 
 const App: React.FC = () => {
   const [totalSupply, setTotalSupply] = useState<number | null>(null);
   const [isMember, setIsMember] = useState<boolean | null>(null);
   const [memberName, setMemberName] = useState<string | null>(null);
+  const [tokenId, setTokenId] = useState<string | null>(null);
+  const [memberCategory, setMemberCategory] = useState<string | null>(null); // Add memberCategory state
   const [account, setAccount] = useState<string | null>(null);
   const [whitelistAddress, setWhitelistAddress] = useState<string>("");
   const [mintName, setMintName] = useState<string>("");
   const [mintTokenURI, setMintTokenURI] = useState<string>("");
   const [status, setStatus] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(true); // New state for loading
-  const contractAddress = "0xFcf083f1E6a975B2365315af4Bed2d32FEC262Df";
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const contractAddress = "0x43Db45EFcb7B28cA004728e74F6Ca880d5F31C39";
   const alchemyUrl = "https://eth-sepolia.g.alchemy.com/v2/K5u9VECWZWJoA5qAXwMwxYeC0Ge-VUwq";
 
   const readContractRef = useRef<ethers.Contract | null>(null);
   const writeContractRef = useRef<ethers.Contract | null>(null);
   const isMounted = useRef(true);
+
+  // Map numeric enum values to string representations
+  const memberCategoryMap: { [key: number]: string } = {
+    0: "None",
+    1: "Knight",
+    2: "Commander",
+    3: "Captain",
+    4: "Oracle",
+    5: "Sentinel",
+    6: "Warrior",
+  };
 
   useEffect(() => {
     isMounted.current = true;
@@ -27,16 +52,13 @@ const App: React.FC = () => {
     async function connectWallet() {
       if (window.ethereum) {
         try {
-          // Check if the user is already connected
           const provider = new ethers.BrowserProvider(window.ethereum);
           const accounts = await provider.send("eth_accounts", []);
           let address: string | null = null;
 
           if (accounts.length > 0) {
-            // User is already connected, use the first account
             address = accounts[0];
           } else {
-            // Request account access
             await provider.send("eth_requestAccounts", []);
             const signer = await provider.getSigner();
             address = await signer.getAddress();
@@ -51,14 +73,37 @@ const App: React.FC = () => {
           if (readContractRef.current && address) {
             const supply = await readContractRef.current.totalSupply();
             if (isMounted.current) setTotalSupply(Number(supply));
+
             const memberStatus = await readContractRef.current.isMember(address);
             if (isMounted.current) {
               setIsMember(memberStatus);
-              // Persist isMember in localStorage
               localStorage.setItem('isMember', JSON.stringify(memberStatus));
+
               if (memberStatus) {
                 const name = await readContractRef.current.memberName(address);
                 setMemberName(name);
+
+                // Fetch tokenId using getTokenIdForAddress
+                try {
+                  const id = await readContractRef.current.getTokenIdForAddress(address);
+                  const tokenIdStr = id.toString();
+                  setTokenId(tokenIdStr);
+                  localStorage.setItem(`tokenId_${address}`, tokenIdStr);
+                } catch (error) {
+                  console.error("Error fetching tokenId:", error);
+                  setTokenId(null);
+                }
+
+                // Fetch memberCategory
+                try {
+                  const category = await readContractRef.current.memberCategory(address);
+                  const categoryStr = memberCategoryMap[Number(category)] || "None";
+                  setMemberCategory(categoryStr);
+                  localStorage.setItem(`memberCategory_${address}`, categoryStr);
+                } catch (error) {
+                  console.error("Error fetching memberCategory:", error);
+                  setMemberCategory(null);
+                }
               }
             }
           }
@@ -75,10 +120,22 @@ const App: React.FC = () => {
       }
     }
 
-    // Check if isMember is stored in localStorage
     const storedIsMember = localStorage.getItem('isMember');
     if (storedIsMember !== null) {
       setIsMember(JSON.parse(storedIsMember));
+    }
+
+    // Check for stored tokenId and memberCategory
+    const storedAccount = localStorage.getItem('account');
+    if (storedAccount) {
+      const storedTokenId = localStorage.getItem(`tokenId_${storedAccount}`);
+      if (storedTokenId) {
+        setTokenId(storedTokenId);
+      }
+      const storedCategory = localStorage.getItem(`memberCategory_${storedAccount}`);
+      if (storedCategory) {
+        setMemberCategory(storedCategory);
+      }
     }
 
     connectWallet();
@@ -110,17 +167,41 @@ const App: React.FC = () => {
       setStatus("Successfully minted NFT for " + mintName);
       setMintName("");
       setMintTokenURI("");
+
       if (readContractRef.current && account) {
         const supply = await readContractRef.current.totalSupply();
         if (isMounted.current) setTotalSupply(Number(supply));
+
         const memberStatus = await readContractRef.current.isMember(account);
         if (isMounted.current) {
           setIsMember(memberStatus);
-          // Update isMember in localStorage
           localStorage.setItem('isMember', JSON.stringify(memberStatus));
+
           if (memberStatus) {
             const name = await readContractRef.current.memberName(account);
             setMemberName(name);
+
+            // Fetch tokenId after minting
+            try {
+              const id = await readContractRef.current.getTokenIdForAddress(account);
+              const tokenIdStr = id.toString();
+              setTokenId(tokenIdStr);
+              localStorage.setItem(`tokenId_${account}`, tokenIdStr);
+            } catch (error) {
+              console.error("Error fetching tokenId after minting:", error);
+              setTokenId(null);
+            }
+
+            // Fetch memberCategory after minting
+            try {
+              const category = await readContractRef.current.memberCategory(account);
+              const categoryStr = memberCategoryMap[Number(category)] || "None";
+              setMemberCategory(categoryStr);
+              localStorage.setItem(`memberCategory_${account}`, categoryStr);
+            } catch (error) {
+              console.error("Error fetching memberCategory after minting:", error);
+              setMemberCategory(null);
+            }
           }
         }
       }
@@ -130,85 +211,86 @@ const App: React.FC = () => {
   };
 
   return (
-    <div>
-      <Router>
-        <div style={{ padding: '20px' }}>
-          <h1>The Chivalric Order of Knightfall</h1>
-          {isLoading ? (
-            <p>Checking membership...</p>
-          ) : account ? (
-            <>
-              <p>Connected Account: {account}</p>
-              <p>Total Supply: {totalSupply !== null ? totalSupply : 'Loading...'}</p>
-              <p>Is Member: {isMember !== null ? (isMember ? 'Yes' : 'No') : 'Loading...'}</p>
-              {isMember && memberName && (
-                <p>Member Name: {memberName}</p>
-              )}
-              {isMember && (
-                <Link to="/vault">
-                  <button
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundImage = 'linear-gradient(to right, #8B4513, #FFD700, url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'50\' height=\'50\'><path d=\'M10 10 L40 40 M40 10 L10 40\' stroke=\'red\' stroke-width=\'2\'/></svg>")')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundImage = 'linear-gradient(to right, #8B4513, #FFD700)')}
-                    style={{
-                      padding: '10px 20px',
-                      fontSize: '16px',
-                      backgroundImage: 'linear-gradient(to right, #8B4513, #FFD700)',
-                      color: 'white',
-                      border: '2px solid #FFD700',
-                      borderRadius: '5px',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      transition: 'background-image 0.3s ease-in-out'
-                    }}
-                    title="Only those bound by oath may pass."
-                  >
-                    Swear Fealty & Enter
-                  </button>
-                </Link>
-              )}
-              <div style={{ marginTop: '20px' }}>
-                <h2>Whitelist an Address</h2>
-                <input
-                  type="text"
-                  placeholder="Address to whitelist (0x...)"
-                  value={whitelistAddress}
-                  onChange={(e) => setWhitelistAddress(e.target.value)}
-                  style={{ width: '300px', marginRight: '10px' }}
-                />
-                <button onClick={handleWhitelist}>Whitelist</button>
-              </div>
-              <div style={{ marginTop: '20px' }}>
-                <h2>Mint an NFT</h2>
-                <input
-                  type="text"
-                  placeholder="Declare Sigil (e.g., Lancelot)"
-                  value={mintName}
-                  onChange={(e) => setMintName(e.target.value)}
-                  style={{ width: '300px', marginRight: '10px', marginBottom: '10px' }}
-                />
-                <br />
-                <input
-                  type="text"
-                  placeholder="Token URI (e.g., ipfs://example)"
-                  value={mintTokenURI}
-                  onChange={(e) => setMintTokenURI(e.target.value)}
-                  style={{ width: '300px', marginRight: '10px' }}
-                />
-                <button onClick={handleMint}>Mint</button>
-              </div>
-              {status && <p style={{ marginTop: '20px' }}>{status}</p>}
-            </>
-          ) : (
-            <p>Please connect your wallet (MetaMask).</p>
-          )}
-        </div>
-        <Routes>
-          <Route path="/vault" element={isLoading ? <div>Checking membership...</div> : (isMember ? <CodexVault /> : <Navigate to="/" />)} />
-          <Route path="/" element={<div />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Router>
-    </div>
+    <WalletContext.Provider value={{
+      isLoading,
+      account,
+      totalSupply,
+      isMember,
+      memberName,
+      tokenId,
+      memberCategory, // Add memberCategory to the context
+      whitelistAddress,
+      setWhitelistAddress,
+      handleWhitelist,
+      mintName,
+      setMintName,
+      mintTokenURI,
+      setMintTokenURI,
+      handleMint,
+      status,
+    }}>
+      <div style={{
+        minHeight: '100vh',
+        backgroundImage: 'url("/background.jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        position: 'relative'
+      }}>
+        <Router>
+          <Routes>
+            {/* Top-Level Pages */}
+            <Route path="/" element={<KnightfallBastion />} />
+            <Route path="/commandry" element={<TheCommandry />} />
+            <Route path="/theinnerkeep" element={
+              isLoading
+                ? <div style={{ color: 'white', textAlign: 'center', zIndex: 2, position: 'relative' }}>Checking membership...</div>
+                : (isMember ? <TheInnerKeep /> : <Navigate to="/" />)
+            } />
+
+            {/* Chambers Within the Inner Keep */}
+            <Route path="/vault" element={
+              isLoading
+                ? <div style={{ color: 'white', textAlign: 'center', zIndex: 2, position: 'relative' }}>Checking membership...</div>
+                : (isMember ? <YourVault /> : <Navigate to="/" />)
+            } />
+            <Route path="/library" element={
+              isLoading
+                ? <div style={{ color: 'white', textAlign: 'center', zIndex: 2, position: 'relative' }}>Checking membership...</div>
+                : (isMember ? <LibraryOfAlexandria /> : <Navigate to="/" />)
+            } />
+            <Route path="/codex" element={
+              isLoading
+                ? <div style={{ color: 'white', textAlign: 'center', zIndex: 2, position: 'relative' }}>Checking membership...</div>
+                : (isMember ? <KnightfallCodex /> : <Navigate to="/" />)
+            } />
+            <Route path="/great-hall" element={
+              isLoading
+                ? <div style={{ color: 'white', textAlign: 'center', zIndex: 2, position: 'relative' }}>Checking membership...</div>
+                : (isMember ? <TheGreatHall /> : <Navigate to="/" />)
+            } />
+            <Route path="/map-room" element={
+              isLoading
+                ? <div style={{ color: 'white', textAlign: 'center', zIndex: 2, position: 'relative' }}>Checking membership...</div>
+                : (isMember ? <TheMapRoom /> : <Navigate to="/" />)
+            } />
+            <Route path="/forgery" element={
+              isLoading
+                ? <div style={{ color: 'white', textAlign: 'center', zIndex: 2, position: 'relative' }}>Checking membership...</div>
+                : (isMember ? <TheForgery /> : <Navigate to="/" />)
+            } />
+            <Route path="/alchemists-wing" element={
+              isLoading
+                ? <div style={{ color: 'white', textAlign: 'center', zIndex: 2, position: 'relative' }}>Checking membership...</div>
+                : (isMember ? <TheAlchemistsWing /> : <Navigate to="/" />)
+            } />
+
+            {/* Redirect any unmatched route to the landing page */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Router>
+      </div>
+    </WalletContext.Provider>
   );
 };
 
